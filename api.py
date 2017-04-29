@@ -10,6 +10,9 @@ class API:
 		self.baseUrl = "http://www.metal-archives.com/"
 		self.debug = True
 		self.crawlSize = 5
+
+	def __soup(self, target):
+		return bs4.BeautifulSoup(target, "lxml")
 		
 	def setDebug(self, debug):
 		self.debug = debug
@@ -18,27 +21,31 @@ class API:
 		self.crawlSize = size
 		
 	def getBandIdByName(self, name):
-		name = name.replace(" ","_")
+		return self.getAllBandIdsByName(name)[0]
+
+	def getAllBandIdsByName(self, name):
+		name = name.replace(" ", "_")
 		if self.debug:
-			print "GET", self.baseUrl+"bands/"+name
-			
-		response = requests.get(self.baseUrl+"bands/"+urllib.quote_plus(name))
+			print "GET", self.baseUrl + "bands/" + name
+
+		response = requests.get(self.baseUrl + "bands/" + name)
 		if "Band not found" in response.text:
-			return -1
+			return [-1]
 		try:
 			id = [l for l in response.text.split("\n") if "bandId" in l][0].split(" = ")[1][:-1]
-			return int(id)
+			return [int(id)]
 		except:
-			#multiple bands with name
-			soup = bs4.BeautifulSoup(response.text)
-			return int(soup.select("h1 ~ ul li a")[0].attrs.get("href").split("/")[-1])
+			# multiple bands with name
+			soup = self.__soup(response.text)
+
+			return [int(x.attrs.get("href").split("/")[-1]) for x in soup.select("h1 ~ ul li a")]
 	
 	def getGenreForBandId(self, id):
 		if self.debug:
 			print "GET", self.baseUrl+"bands/_/"+str(id)
 			
 		response = requests.get(self.baseUrl+"bands/_/"+str(id))
-		soup = bs4.BeautifulSoup(response.text)
+		soup = self.__soup(response.text)
 		return soup.select("dl.float_right dd")[0].getText()
 
 	
@@ -46,8 +53,10 @@ class API:
 		if self.debug:
 			print "GET", self.baseUrl+"band/ajax-recommendations/id/"+str(id)
 		response = requests.get(self.baseUrl+"band/ajax-recommendations/id/"+str(id))
-		soup = bs4.BeautifulSoup(response.text)
-		
+		soup = self.__soup(response.text)
+		if len(soup.select('#no_artists')) > 0:
+			# This band has no recommendations
+			return []
 		return [(int(x.attrs.get("href").split("/")[-1]),x.getText()) for x in soup.select("tbody tr td a")[:self.crawlSize]]
 	
 	def getAlbumsByBandId(self, id):
@@ -56,7 +65,7 @@ class API:
 			
 		response = requests.get(self.baseUrl+"band/discography/id/%s/tab/main" % str(id))
 		ret = list()
-		soup = bs4.BeautifulSoup(response.text)
+		soup = self.__soup(response.text)
 		links = soup.select("a[href*=albums]")
 		for a in links:
 			ret.append((int(a.attrs.get("href").split("/")[-1]), unicode(a.getText())))
@@ -67,7 +76,7 @@ class API:
 			print "GET", self.baseUrl + "albums/_/_/%s" % str(id)
 			
 		response = requests.get(self.baseUrl + "albums/_/_/%s" % str(id))	
-		soup = bs4.BeautifulSoup(response.text)
+		soup = self.__soup(response.text)
 		links = soup.select("tr.odd")
 		links.extend(soup.select("tr.even"))
 		ret = list()
