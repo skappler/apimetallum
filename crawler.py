@@ -76,7 +76,7 @@ def main():
 				rec = api.getRecommendationsForId(i)
 			except requests.exceptions.RequestException as e:
 				continue
-			for (aid, name) in rec:
+			for (aid, name, origin, genre) in rec:
 				if not aid in crawled and not aid in ids:
 					mapping[aid] = name
 					try:

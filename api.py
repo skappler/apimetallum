@@ -48,6 +48,15 @@ class API:
 		soup = self.__soup(response.text)
 		return soup.select("dl.float_right dd")[0].getText()
 
+
+	def getOriginForBandId(self, id):
+		if self.debug:
+			print "GET", self.baseUrl+"bands/_/"+str(id)
+
+		response = requests.get(self.baseUrl+"bands/_/"+str(id))
+		soup = self.__soup(response.text)
+		return soup.select("dl.float_left dd a")[0].getText()
+
 	
 	def getRecommendationsForId(self, id):
 		if self.debug:
@@ -57,7 +66,13 @@ class API:
 		if len(soup.select('#no_artists')) > 0:
 			# This band has no recommendations
 			return []
-		return [(int(x.attrs.get("href").split("/")[-1]),x.getText()) for x in soup.select("tbody tr td a")[:self.crawlSize]]
+		table = [x.find_all('td') for x in soup.select("tbody tr")[:self.crawlSize]]
+		def parseRow(row):
+			link = row[0].a
+			origin = row[1].getText()
+			genre = row[2].getText()
+			return int(link.attrs.get("href").split("/")[-1]), link.getText(), origin, genre
+		return map(parseRow, table)
 	
 	def getAlbumsByBandId(self, id):
 		if self.debug:
