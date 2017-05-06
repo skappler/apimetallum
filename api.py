@@ -12,7 +12,7 @@ class API:
 		self.crawlSize = 5
 
 	def __soup(self, target):
-		return bs4.BeautifulSoup(target, "lxml")
+		return bs4.BeautifulSoup(target.text.encode(target.encoding), "lxml")
 		
 	def setDebug(self, debug):
 		self.debug = debug
@@ -36,7 +36,7 @@ class API:
 			return [int(id)]
 		except:
 			# multiple bands with name
-			soup = self.__soup(response.text)
+			soup = self.__soup(response)
 
 			return [int(x.attrs.get("href").split("/")[-1]) for x in soup.select("h1 ~ ul li a")]
 	
@@ -45,7 +45,7 @@ class API:
 			print "GET", self.baseUrl+"bands/_/"+str(id)
 			
 		response = requests.get(self.baseUrl+"bands/_/"+str(id))
-		soup = self.__soup(response.text)
+		soup = self.__soup(response)
 		return soup.select("dl.float_right dd")[0].getText()
 
 
@@ -54,7 +54,7 @@ class API:
 			print "GET", self.baseUrl+"bands/_/"+str(id)
 
 		response = requests.get(self.baseUrl+"bands/_/"+str(id))
-		soup = self.__soup(response.text)
+		soup = self.__soup(response)
 		return soup.select("dl.float_left dd a")[0].getText()
 
 	
@@ -62,7 +62,7 @@ class API:
 		if self.debug:
 			print "GET", self.baseUrl+"band/ajax-recommendations/id/"+str(id)
 		response = requests.get(self.baseUrl+"band/ajax-recommendations/id/"+str(id))
-		soup = self.__soup(response.text)
+		soup = self.__soup(response)
 		if len(soup.select('#no_artists')) > 0:
 			# This band has no recommendations
 			return []
@@ -80,7 +80,7 @@ class API:
 			
 		response = requests.get(self.baseUrl+"band/discography/id/%s/tab/main" % str(id))
 		ret = list()
-		soup = self.__soup(response.text)
+		soup = self.__soup(response)
 		links = soup.select("a[href*=albums]")
 		for a in links:
 			ret.append((int(a.attrs.get("href").split("/")[-1]), unicode(a.getText())))
@@ -91,7 +91,7 @@ class API:
 			print "GET", self.baseUrl + "albums/_/_/%s" % str(id)
 			
 		response = requests.get(self.baseUrl + "albums/_/_/%s" % str(id))	
-		soup = self.__soup(response.text)
+		soup = self.__soup(response)
 		links = soup.select("tr.odd")
 		links.extend(soup.select("tr.even"))
 		ret = list()
