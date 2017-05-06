@@ -12,7 +12,7 @@ class API:
 		self.crawlSize = 5
 
 	def __soup(self, target):
-		return bs4.BeautifulSoup(target.text.encode(target.encoding), "lxml")
+		return bs4.BeautifulSoup(target.text, "lxml")
 		
 	def setDebug(self, debug):
 		self.debug = debug
@@ -71,7 +71,7 @@ class API:
 			link = row[0].a
 			origin = row[1].getText()
 			genre = row[2].getText()
-			return int(link.attrs.get("href").split("/")[-1]), link.getText(), origin, genre
+			return int(link.attrs.get("href").split("/")[-1]), link.getText().encode(response.encoding), origin, genre
 		return map(parseRow, table)
 	
 	def getAlbumsByBandId(self, id):
@@ -83,7 +83,7 @@ class API:
 		soup = self.__soup(response)
 		links = soup.select("a[href*=albums]")
 		for a in links:
-			ret.append((int(a.attrs.get("href").split("/")[-1]), unicode(a.getText())))
+			ret.append((int(a.attrs.get("href").split("/")[-1]), a.getText().encode(response.encoding)))
 		return ret
 	
 	def getAlbumById(self, id):
